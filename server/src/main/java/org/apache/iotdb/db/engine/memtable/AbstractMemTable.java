@@ -52,6 +52,10 @@ public abstract class AbstractMemTable implements IMemTable {
 
   private int avgSeriesPointNumThreshold =
       IoTDBDescriptor.getInstance().getConfig().getAvgSeriesPointNumberThreshold();
+
+  private long memtableSizeThreshold =
+      IoTDBDescriptor.getInstance().getConfig().getMemtableSizeThreshold();
+
   /** memory size of data points, including TEXT values */
   private long memSize = 0;
   /**
@@ -234,6 +238,14 @@ public abstract class AbstractMemTable implements IMemTable {
       return false;
     }
     return totalPointsNum >= totalPointsNumThreshold;
+  }
+
+  @Override
+  public boolean reachMemtableSizeThresholdBasedOnSeriesNum() {
+    if (memSize == 0) {
+      return false;
+    }
+    return memSize >= memtableSizeThreshold;
   }
 
   @Override

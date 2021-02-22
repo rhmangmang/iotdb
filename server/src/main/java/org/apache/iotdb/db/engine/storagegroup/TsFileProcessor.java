@@ -131,7 +131,7 @@ public class TsFileProcessor {
   @SuppressWarnings("squid:S107")
   TsFileProcessor(
       String storageGroupName,
-      File tsfile,
+      File tsFile,
       StorageGroupInfo storageGroupInfo,
       CloseFileListener closeTsFileCallback,
       UpdateEndTimeCallBack updateLatestFlushTimeCallback,
@@ -139,12 +139,12 @@ public class TsFileProcessor {
       int deviceNumInLastClosedTsFile)
       throws IOException {
     this.storageGroupName = storageGroupName;
-    this.tsFileResource = new TsFileResource(tsfile, this, deviceNumInLastClosedTsFile);
+    this.tsFileResource = new TsFileResource(tsFile, this, deviceNumInLastClosedTsFile);
     this.storageGroupInfo = storageGroupInfo;
-    this.writer = new RestorableTsFileIOWriter(tsfile);
+    this.writer = new RestorableTsFileIOWriter(tsFile);
     this.updateLatestFlushTimeCallback = updateLatestFlushTimeCallback;
     this.sequence = sequence;
-    logger.info("create a new tsfile processor {}", tsfile.getAbsolutePath());
+    logger.info("create a new tsfile processor {}", tsFile.getAbsolutePath());
     flushListeners.add(new WALFlushListener(this));
     closeFileListeners.add(closeTsFileCallback);
   }
@@ -447,25 +447,24 @@ public class TsFileProcessor {
           tsFileResource.getTsFile().getAbsolutePath());
       return true;
     }
-    if (!enableMemControl && workMemTable.memSize() >= getMemtableSizeThresholdBasedOnSeriesNum()) {
-      logger.info(
-          "The memtable size {} of tsfile {} reaches the threshold",
-          workMemTable.memSize(),
-          tsFileResource.getTsFile().getAbsolutePath());
-      return true;
+    if (enableMemControl) {
+      if (workMemTable.reachMemtableSizeThresholdBasedOnSeriesNum()) {
+        logger.info(
+            "The memtable size {} of tsfile {} reaches the threshold",
+            workMemTable.memSize(),
+            tsFileResource.getTsFile().getAbsolutePath());
+        return true;
+      }
+      if (workMemTable.reachTotalPointNumThreshold()) {
+        logger.info(
+            "The avg series points num {} of tsfile {} reaches the threshold",
+            workMemTable.getTotalPointsNum() / workMemTable.getSeriesNumber(),
+            tsFileResource.getTsFile().getAbsolutePath());
+        return true;
+      }
     }
-    if (workMemTable.reachTotalPointNumThreshold()) {
-      logger.info(
-          "The avg series points num {} of tsfile {} reaches the threshold",
-          workMemTable.getTotalPointsNum() / workMemTable.getSeriesNumber(),
-          tsFileResource.getTsFile().getAbsolutePath());
-      return true;
-    }
-    return false;
-  }
 
-  private long getMemtableSizeThresholdBasedOnSeriesNum() {
-    return config.getMemtableSizeThreshold();
+    return false;
   }
 
   public boolean shouldClose() {

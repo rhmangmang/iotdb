@@ -74,6 +74,8 @@ public interface IMemTable {
    */
   boolean reachTotalPointNumThreshold();
 
+  boolean reachMemtableSizeThresholdBasedOnSeriesNum();
+
   int getSeriesNumber();
 
   long getTotalPointsNum();
